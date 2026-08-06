@@ -1,7 +1,7 @@
 {
   "name": "sync-irc-api",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
   "description": "Render-hosted presence and messaging API for Sync clients",
   "scripts": {
     "start": "node server.js",
