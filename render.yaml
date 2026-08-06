@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: sync-irc-api
+    runtime: node
+    rootDir: irc-server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
