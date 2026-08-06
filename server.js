@@ -20,9 +20,9 @@ function json(res, status, payload) {
     res.writeHead(status, {
         "Content-Type": "application/json; charset=utf-8",
         "Content-Length": Buffer.byteLength(body),
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Headers": "Content-Type",
-                  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     });
     res.end(body);
 }
@@ -43,9 +43,9 @@ function validateIdentity(body) {
     if (!body.authenticated || !username || username.length > MAX_USERNAME_LENGTH ||
         !USERNAME_PATTERN.test(username)) {
         return { error: "authenticated username is required" };
-        }
+    }
 
-        const color = typeof body.color === "string" && COLOR_PATTERN.test(body.color)
+    const color = typeof body.color === "string" && COLOR_PATTERN.test(body.color)
         ? body.color.toUpperCase()
         : "#FFFFFF";
     return { username, color };
@@ -118,8 +118,20 @@ function validateMessage(body, identity) {
 }
 
 async function handle(req, res) {
+    // ---------- LOGS DE DEPURAÇÃO ----------
+    console.log(`📩 ${req.method} ${req.url}`);
+    console.log("   Host:", req.headers.host);
+    console.log("   X-Forwarded-Proto:", req.headers['x-forwarded-proto']);
+    // ---------------------------------------
+
     if (req.method === "OPTIONS") return json(res, 204, {});
-    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    
+    // ---------- CORREÇÃO DA URL ----------
+    const host = req.headers.host || 'api-0us2.onrender.com';
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const url = new URL(req.url, `${protocol}://${host}`);
+    // -------------------------------------
+
     cleanPresence();
 
     if (req.method === "GET" && url.pathname === "/health") {
@@ -171,14 +183,14 @@ async function handle(req, res) {
             presence.set(identity.username, { lastSeen: Date.now(), color: identity.color });
             const cursor = Number.parseInt(String(body.cursor || "0"), 10) || 0;
             const visible = events.filter((event) =>
-            Number(event.id) > cursor &&
-            event.sender !== identity.username &&
-            (event.target === null || event.target === identity.username)
+                Number(event.id) > cursor &&
+                event.sender !== identity.username &&
+                (event.target === null || event.target === identity.username)
             );
             return json(res, 200, {
                 cursor: String(nextEventId - 1),
-                        events: visible,
-                        online: [...presence.keys()].sort(),
+                events: visible,
+                online: [...presence.keys()].sort(),
             });
         } catch (error) {
             return json(res, 400, { error: error.message });
@@ -214,9 +226,12 @@ async function handle(req, res) {
         } catch (error) {
             return json(res, 400, { error: error.message });
         }
-        }
+    }
 
-        return json(res, 404, { error: "not found" });
+    // ---------- LOG DE ROTA NÃO ENCONTRADA ----------
+    console.log(`❌ Nenhuma rota correspondeu. pathname: "${url.pathname}", method: ${req.method}`);
+    // -------------------------------------------------
+    return json(res, 404, { error: "not found" });
 }
 
 const server = http.createServer((req, res) => {
